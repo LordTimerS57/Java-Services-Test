@@ -3,11 +3,15 @@ package com.exa.rest;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.core.Application;
 
-/** Configuration explicite des ressources REST de l'application. */
-@ApplicationPath("/api")
+/**
+ * Classe d'application JAX-RS.
+ *
+ * On l'utilise principalement avec web.xml, qui pointe vers le package com.exa.rest.
+ * L'annotation @ApplicationPath est volontairement omise ici pour éviter un doublon
+ * de registration avec le mapping Jersey défini dans web.xml.
+ */
 public class ApplicationConfig extends Application {
 
     @Override
