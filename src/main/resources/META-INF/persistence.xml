@@ -14,9 +14,9 @@
         <properties>
             <!-- Paramètres de connexion PostgreSQL -->
             <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver" />
-            <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/mon_projet" />
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/ne-laiko_hub" />
             <property name="jakarta.persistence.jdbc.user" value="postgres" />
-            <property name="jakarta.persistence.jdbc.password" value="postgres" />
+            <property name="jakarta.persistence.jdbc.password" value="test1518" />
 
             <!-- Paramètres Hibernate -->
             <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect" />
