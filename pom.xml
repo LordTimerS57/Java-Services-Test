@@ -20,24 +20,20 @@
         <postgresql.version>42.7.4</postgresql.version>
         <jackson.version>2.17.2</jackson.version>
         <jersey.version>3.1.5</jersey.version>
+        <jstl.version>3.0.1</jstl.version>
     </properties>
 
     <dependencies>
-        <!-- API Jakarta Persistence 3.1 -->
         <dependency>
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
             <version>3.1.0</version>
         </dependency>
-
-        <!-- Implémentation JPA Hibernate ORM 6 -->
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
             <version>${hibernate.version}</version>
         </dependency>
-
-        <!-- Pilote JDBC PostgreSQL -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
@@ -45,7 +41,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Jackson et prise en charge de java.time.LocalDateTime -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -57,7 +52,6 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- Jersey / JAX-RS Jakarta EE 10 -->
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet</artifactId>
@@ -85,7 +79,13 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Tests unitaires -->
+        <!-- JSTL Jakarta pour les pages JSP -->
+        <dependency>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+            <version>${jstl.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
