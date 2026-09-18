@@ -14,14 +14,12 @@
     <description>Making App Architecture related to Services</description>
 
     <properties>
-        <!-- Compilation avec Java 17 -->
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <!-- Versions des dépendances -->
         <hibernate.version>6.5.3.Final</hibernate.version>
         <postgresql.version>42.7.4</postgresql.version>
         <jackson.version>2.17.2</jackson.version>
+        <jersey.version>3.1.5</jersey.version>
     </properties>
 
     <dependencies>
@@ -54,7 +52,35 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- Tests unitaires, si nécessaire ultérieurement -->
+        <!-- Jersey / JAX-RS Jakarta EE 10 -->
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Tests unitaires -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -65,7 +91,6 @@
 
     <build>
         <plugins>
-            <!-- Compilation explicite en Java 17 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -74,8 +99,6 @@
                     <release>${maven.compiler.release}</release>
                 </configuration>
             </plugin>
-
-            <!-- Exécution des tests JUnit 5 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
