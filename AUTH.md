@@ -1,8 +1,11 @@
-# API d'authentification
+# Authentification et compte utilisateur
 
-- `POST /api/auth/register` — `{ matricule, nom, prenom, email, motDePasse, role? }`
-- `POST /api/auth/login` — `{ email, motDePasse }`
-- `PUT /api/users/{matricule}/profile` — `{ currentPassword, nom?, prenom?, email? }`
-- `PUT /api/users/{matricule}/password` — `{ currentPassword, newPassword }`
+Les endpoints sont préfixés par `/api` via `web.xml`.
 
-Les mots de passe sont hashés avec PBKDF2-HMAC-SHA256 et un sel aléatoire. Les anciens mots de passe en clair sont migrés automatiquement lors d'une connexion réussie.
+- `POST /api/auth/register`: `{ matricule, nom, prenom, email, motDePasse, role: "ETUDIANT" }`
+- `POST /api/auth/login`: `{ email, motDePasse }`
+- `PUT /api/users/{matricule}/profile`: `{ currentPassword, nom, prenom }`
+- `PUT /api/users/{matricule}/email`: `{ currentPassword, email }`
+- `PUT /api/users/{matricule}/password`: `{ currentPassword, newPassword }`
+
+Les changements de profil et d'email sont volontairement séparés. Le mot de passe actuel est obligatoire pour chaque modification.
