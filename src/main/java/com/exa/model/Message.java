@@ -19,6 +19,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
@@ -62,8 +63,12 @@ public class Message {
     @JsonIgnoreProperties({ "messagesReponses", "envoyeur", "receveur" })
     private Message messageParent;
 
-    @OneToMany(mappedBy = "messageParent", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({ "messageParent", "envoyeur", "receveur" })
+    // EAGER + tri chronologique : l'auteur (envoyeur) de chaque réponse est
+    // maintenant sérialisé (on ne masque plus que "messageParent", pour éviter
+    // la boucle infinie parent <-> enfant en JSON).
+    @OneToMany(mappedBy = "messageParent", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("dateDePublication ASC")
+    @JsonIgnoreProperties({ "messageParent" })
     private List<Message> messagesReponses = new ArrayList<>();
 
     /** Constructeur vide requis par JPA. */

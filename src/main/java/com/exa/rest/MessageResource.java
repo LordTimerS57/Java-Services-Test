@@ -43,7 +43,10 @@ public class MessageResource {
         try {
             LocalDateTime start = parseDate(from, false);
             LocalDateTime end = parseDate(to, true);
-            List<Message> messages = em.createQuery("SELECT m FROM Message m WHERE m.receveur IS NULL", Message.class).getResultList()
+            // Uniquement les messages racines (pas les réponses) : elles sont
+            // déjà incluses via Message.messagesReponses, imbriquées.
+            List<Message> messages = em.createQuery(
+                    "SELECT m FROM Message m WHERE m.receveur IS NULL AND m.messageParent IS NULL", Message.class).getResultList()
                     .stream().filter(m -> matches(m, query, subject, start, end))
                     .sorted((a, b) -> "oldest".equalsIgnoreCase(sort)
                             ? a.getDateDePublication().compareTo(b.getDateDePublication())
@@ -66,7 +69,8 @@ public class MessageResource {
         try {
             LocalDateTime start = parseDate(from, false);
             LocalDateTime end = parseDate(to, true);
-            Map<String, List<Message>> grouped = em.createQuery("SELECT m FROM Message m WHERE m.receveur IS NULL", Message.class).getResultList()
+            Map<String, List<Message>> grouped = em.createQuery(
+                    "SELECT m FROM Message m WHERE m.receveur IS NULL AND m.messageParent IS NULL", Message.class).getResultList()
                     .stream().filter(m -> matches(m, query, null, start, end))
                     .collect(Collectors.groupingBy(m -> m.getObjet().trim(), LinkedHashMap::new, Collectors.toList()));
             int safeLimit = Math.max(1, Math.min(limit, 100));

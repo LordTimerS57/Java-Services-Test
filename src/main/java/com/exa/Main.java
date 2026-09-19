@@ -11,6 +11,7 @@ import jakarta.persistence.EntityManager;
 
 /**
  * Point d'entrée simple pour tester la persistance JPA en mode Java Application.
+ * Teste notamment le fil de discussion : Message -> Message (réponse) -> Nouveau Message.
  */
 public class Main {
 
@@ -25,44 +26,20 @@ public class Main {
             // 1. Création des utilisateurs
             // ------------------------------------------------------------
 
-            // Professeur
-            User prof = new User(
-                    "PROF001",
-                    "Rabe",
-                    "Koto",
-                    "rabe@univ.mg",
-                    "hashProf",
-                    Role.PROF
-            );
+            User prof = new User("PROF001", "Rabe", "Koto", "rabe@univ.mg", "hashProf", Role.PROF);
             em.persist(prof);
 
-            // Étudiant (Matricule 9045)
-            User etudiant = new User(
-                    "9045",
-                    "Rasoa",
-                    "Miora",
-                    "miora@univ.mg",
-                    "hashEtu",
-                    Role.ETUDIANT
-            );
+            User etudiant = new User("9045", "Rasoa", "Miora", "miora@univ.mg", "hashEtu", Role.ETUDIANT);
             em.persist(etudiant);
 
-            // Administrateur (optionnel, pour illustrer le rôle ADMIN)
-            User admin = new User(
-                    "ADM001",
-                    "Andry",
-                    "Rado",
-                    "admin@univ.mg",
-                    "hashAdmin",
-                    Role.ADMIN
-            );
+            User admin = new User("ADM001", "Andry", "Rado", "admin@univ.mg", "hashAdmin", Role.ADMIN);
             em.persist(admin);
 
             // ------------------------------------------------------------
-            // 2. Création des messages
+            // 2. Fil de discussion : Message -> Réponse -> Réponse à la réponse
             // ------------------------------------------------------------
 
-            // Message public du professeur : bienvenue
+            // Message racine du professeur : bienvenue (pas de parent)
             Message msgBienvenue = new Message(
                     prof,
                     "Bienvenue - Analyse 2",
@@ -71,7 +48,7 @@ public class Main {
             );
             em.persist(msgBienvenue);
 
-            // Question de l'étudiant
+            // Question de l'étudiant : nouveau message racine, indépendant
             Message msgQuestion = new Message(
                     etudiant,
                     "Question ? Analyse 2 - Intégrale Double changement de variable",
@@ -80,7 +57,7 @@ public class Main {
             );
             em.persist(msgQuestion);
 
-            // Réponse du professeur liée à la question de l'étudiant
+            // Réponse du professeur à la question (niveau 1)
             Message msgReponse = new Message(
                     prof,
                     "Réponse - Changement de variable",
@@ -91,27 +68,51 @@ public class Main {
             msgReponse.setMessageParent(msgQuestion);
             em.persist(msgReponse);
 
+            // Relance de l'étudiant en réponse à la réponse du professeur (niveau 2)
+            Message msgRelance = new Message(
+                    etudiant,
+                    "Re: Réponse - Changement de variable",
+                    "Merci Monsieur ! Et pour un domaine elliptique, on utiliserait "
+                            + "les coordonnées polaires généralisées, c'est bien ça ?"
+            );
+            msgRelance.setMessageParent(msgReponse);
+            em.persist(msgRelance);
+
+            // Confirmation du professeur en réponse à la relance (niveau 3)
+            Message msgConfirmation = new Message(
+                    prof,
+                    "Re: Re: Réponse - Changement de variable",
+                    "Exactement, avec x = a*r*cos(θ) et y = b*r*sin(θ), "
+                            + "et un jacobien égal à a*b*r."
+            );
+            msgConfirmation.setMessageParent(msgRelance);
+            em.persist(msgConfirmation);
+
+            // Nouveau message indépendant de l'étudiant (aucun rapport avec le fil précédent)
+            Message msgNouveau = new Message(
+                    etudiant,
+                    "Question - Théorème de Fubini",
+                    "Bonjour, pourriez-vous préciser les conditions d'application "
+                            + "du théorème de Fubini pour les intégrales doubles ?"
+            );
+            em.persist(msgNouveau);
+
             em.getTransaction().commit();
             System.out.println("Utilisateurs et messages persistés avec succès.");
 
             // ------------------------------------------------------------
-            // 3. Lecture de tous les messages avec JPQL
+            // 3. Lecture des messages RACINES uniquement (comme le fera l'API)
+            //    puis affichage récursif de chaque fil de discussion
             // ------------------------------------------------------------
-            List<Message> messages = em.createQuery(
-                    "SELECT m FROM Message m",
+            List<Message> racines = em.createQuery(
+                    "SELECT m FROM Message m WHERE m.receveur IS NULL AND m.messageParent IS NULL "
+                            + "ORDER BY m.dateDePublication ASC",
                     Message.class
             ).getResultList();
 
-            System.out.println("\n===== LISTE DES MESSAGES =====\n");
-            for (Message currentMessage : messages) {
-                System.out.println("Objet    : " + currentMessage.getObjet());
-                System.out.println("Contenu  : " + currentMessage.getContenu());
-                System.out.println("Envoyeur : " + currentMessage.getEnvoyeur().getPrenom()
-                        + " " + currentMessage.getEnvoyeur().getNom()
-                        + " (" + currentMessage.getEnvoyeur().getRole() + ")");
-                if (currentMessage.getMessageParent() != null) {
-                    System.out.println("En réponse à : " + currentMessage.getMessageParent().getObjet());
-                }
+            System.out.println("\n===== ARBORESCENCE DES MESSAGES =====\n");
+            for (Message racine : racines) {
+                afficherFil(racine, 0);
                 System.out.println("------------------------------");
             }
 
@@ -126,6 +127,24 @@ public class Main {
                 em.close();
             }
             JPAUtil.close();
+        }
+    }
+
+    /**
+     * Affiche récursivement un message et toutes ses réponses imbriquées,
+     * avec une indentation croissante selon la profondeur.
+     */
+    private static void afficherFil(Message message, int profondeur) {
+        String indent = "  ".repeat(profondeur);
+        System.out.println(indent + "Objet    : " + message.getObjet());
+        System.out.println(indent + "Contenu  : " + message.getContenu());
+        System.out.println(indent + "Envoyeur : " + message.getEnvoyeur().getPrenom()
+                + " " + message.getEnvoyeur().getNom()
+                + " (" + message.getEnvoyeur().getRole() + ")");
+
+        for (Message reponse : message.getMessagesReponses()) {
+            System.out.println(indent + "  ↳ Réponse :");
+            afficherFil(reponse, profondeur + 1);
         }
     }
 }

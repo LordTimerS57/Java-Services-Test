@@ -5,6 +5,8 @@ import com.exa.rest.dto.EmailUpdateRequest;
 import com.exa.rest.dto.PasswordUpdateRequest;
 import com.exa.rest.dto.ProfileUpdateRequest;
 import com.exa.util.JPAUtil;
+import com.exa.util.PasswordUtil;
+
 import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.PUT;

@@ -1,4 +1,4 @@
-package com.exa.rest;
+package com.exa.util;
 
 import java.security.SecureRandom;
 import java.util.Base64;

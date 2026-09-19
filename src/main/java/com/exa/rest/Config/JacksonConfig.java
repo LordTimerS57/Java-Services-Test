@@ -1,4 +1,4 @@
-package com.exa.rest;
+package com.exa.rest.Config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

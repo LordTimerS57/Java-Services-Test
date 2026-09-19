@@ -4,6 +4,8 @@ import com.exa.model.User;
 import com.exa.rest.dto.LoginRequest;
 import com.exa.rest.dto.RegisterRequest;
 import com.exa.util.JPAUtil;
+import com.exa.util.PasswordUtil;
+
 import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
