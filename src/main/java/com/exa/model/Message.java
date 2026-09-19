@@ -1,10 +1,13 @@
 package com.exa.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,6 +18,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
@@ -29,7 +33,7 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(length = 50, nullable = false)
+    @Column(length = 200, nullable = false)
     private String objet;
 
     @Column(columnDefinition = "TEXT", nullable = false)
@@ -52,6 +56,15 @@ public class Message {
     @JoinColumn(name = "receveur_matricule", nullable = true)
     @JsonIgnoreProperties({ "messagesEnvoyes", "messagesRecus", "motDePasse" })
     private User receveur;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "message_parent_id", nullable = true)
+    @JsonIgnoreProperties({ "messagesReponses", "envoyeur", "receveur" })
+    private Message messageParent;
+
+    @OneToMany(mappedBy = "messageParent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({ "messageParent", "envoyeur", "receveur" })
+    private List<Message> messagesReponses = new ArrayList<>();
 
     /** Constructeur vide requis par JPA. */
     public Message() {
@@ -132,6 +145,22 @@ public class Message {
 
     public void setReceveur(User receveur) {
         this.receveur = receveur;
+    }
+
+    public Message getMessageParent() {
+        return messageParent;
+    }
+
+    public void setMessageParent(Message messageParent) {
+        this.messageParent = messageParent;
+    }
+
+    public List<Message> getMessagesReponses() {
+        return messagesReponses;
+    }
+
+    public void setMessagesReponses(List<Message> messagesReponses) {
+        this.messagesReponses = messagesReponses;
     }
 
     /** Statuts possibles pour un message. */

@@ -10,6 +10,7 @@
 
         <class>com.exa.model.User</class>
         <class>com.exa.model.Message</class>
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>
             <!-- Paramètres de connexion PostgreSQL -->

@@ -55,11 +55,11 @@ public class UserAccountResource {
     @PUT
     @Path("/{matricule}/password")
     public Response updatePassword(@PathParam("matricule") String matricule, PasswordUpdateRequest request) {
-        if (request == null || blank(request.currentPassword) || !validPassword(request.newPassword)) return bad("Le nouveau mot de passe doit contenir au moins 8 caractères");
+    	if (request == null || !validPassword(request.newPassword)) return bad("Le nouveau mot de passe doit contenir au moins 8 caractères");
         EntityManager em = JPAUtil.getEntityManager();
         try {
-            User user = findAuthorizedUser(em, matricule, request.currentPassword);
-            if (user == null) return unauthorizedOrNotFound(em, matricule);
+            User user = em.find(User.class, matricule);
+            if (user == null) return Response.status(Response.Status.NOT_FOUND).build();
             em.getTransaction().begin(); user.setMotDePasse(PasswordUtil.hash(request.newPassword)); em.getTransaction().commit();
             return Response.noContent().build();
         } catch (RuntimeException exception) { rollback(em); return serverError(exception); } finally { em.close(); }

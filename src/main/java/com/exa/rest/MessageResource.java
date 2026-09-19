@@ -3,7 +3,6 @@ package com.exa.rest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -90,6 +89,20 @@ public class MessageResource {
         finally { em.close(); }
     }
 
+    @GET @Path("/{id}/reponses")
+    public Response getReponses(@PathParam("id") int id) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            Message message = em.find(Message.class, id);
+            if (message == null) return Response.status(Response.Status.NOT_FOUND).build();
+            List<Message> reponses = em.createQuery(
+                    "SELECT m FROM Message m WHERE m.messageParent.id = :id", Message.class)
+                    .setParameter("id", id)
+                    .getResultList();
+            return Response.ok(reponses).build();
+        } finally { em.close(); }
+    }
+
     @POST
     public Response create(Message received) {
         EntityManager em = JPAUtil.getEntityManager();
@@ -99,7 +112,17 @@ public class MessageResource {
             if (sender == null) return bad("Envoyeur introuvable");
             User receiver = received.getReceveur() == null ? null : findUser(em, received.getReceveur());
             if (received.getReceveur() != null && receiver == null) return bad("Destinataire introuvable");
-            received.setEnvoyeur(sender); received.setReceveur(receiver);
+            
+            Message parent = null;
+            if (received.getMessageParent() != null && received.getMessageParent().getId() > 0) {
+                parent = em.find(Message.class, received.getMessageParent().getId());
+                if (parent == null) return bad("Message parent introuvable");
+            }
+            
+            received.setEnvoyeur(sender); 
+            received.setReceveur(receiver);
+            received.setMessageParent(parent);
+            
             em.getTransaction().begin(); em.persist(received); em.getTransaction().commit();
             return Response.status(Response.Status.CREATED).entity(received).build();
         } catch (RuntimeException exception) { rollback(em); return Response.serverError().build(); } finally { em.close(); }
