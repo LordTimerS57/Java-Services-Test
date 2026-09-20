@@ -1,14 +1,19 @@
 package com.exa.rest;
 
+import java.util.Map;
+
 import com.exa.model.User;
 import com.exa.rest.dto.EmailUpdateRequest;
 import com.exa.rest.dto.PasswordUpdateRequest;
 import com.exa.rest.dto.ProfileUpdateRequest;
 import com.exa.util.JPAUtil;
+import com.exa.util.MailUtil;
+import com.exa.util.PasswordResetStore;
 import com.exa.util.PasswordUtil;
 
 import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -54,17 +59,52 @@ public class UserAccountResource {
         } catch (RuntimeException exception) { rollback(em); return serverError(exception); } finally { em.close(); }
     }
 
-    @PUT
-    @Path("/{matricule}/password")
-    public Response updatePassword(@PathParam("matricule") String matricule, PasswordUpdateRequest request) {
-    	if (request == null || !validPassword(request.newPassword)) return bad("Le nouveau mot de passe doit contenir au moins 8 caractères");
+    @POST
+    @Path("/{matricule}/password/request")
+    public Response requestPasswordChange(@PathParam("matricule") String matricule, PasswordUpdateRequest request) {
+        if (request == null || !validPassword(request.newPassword)) return bad("Le nouveau mot de passe doit contenir au moins 8 caractères");
         EntityManager em = JPAUtil.getEntityManager();
         try {
             User user = em.find(User.class, matricule);
             if (user == null) return Response.status(Response.Status.NOT_FOUND).build();
-            em.getTransaction().begin(); user.setMotDePasse(PasswordUtil.hash(request.newPassword)); em.getTransaction().commit();
+            String code = PasswordResetStore.create(matricule, request.newPassword);
+            if (code == null) return Response.status(429).entity("{\"message\":\"Un code vient d'être envoyé. Patientez une minute avant d'en redemander un.\"}").build();
+            try {
+                MailUtil.sendPasswordCode(user.getEmail(), user.getPrenom(), code);
+            } catch (RuntimeException exception) {
+                PasswordResetStore.cancel(matricule);
+                return serverError(exception);
+            }
+            return Response.ok(Map.of("email", mask(user.getEmail()))).build();
+        } finally { em.close(); }
+    }
+
+    @POST
+    @Path("/{matricule}/password/confirm")
+    public Response confirmPasswordChange(@PathParam("matricule") String matricule, PasswordUpdateRequest request) {
+        if (request == null || blank(request.code)) return bad("Code requis");
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            User user = em.find(User.class, matricule);
+            if (user == null) return Response.status(Response.Status.NOT_FOUND).build();
+            PasswordResetStore.Outcome outcome = PasswordResetStore.verify(matricule, request.code.trim());
+            switch (outcome.status) {
+                case NONE:    return bad("Aucune demande en cours. Renvoyez un code.");
+                case EXPIRED: return bad("Code expiré. Renvoyez un code.");
+                case LOCKED:  return bad("Trop de tentatives. Renvoyez un code.");
+                case INVALID: return bad("Code incorrect");
+                default: break;
+            }
+            em.getTransaction().begin();
+            user.setMotDePasse(outcome.passwordHash);
+            em.getTransaction().commit();
             return Response.noContent().build();
         } catch (RuntimeException exception) { rollback(em); return serverError(exception); } finally { em.close(); }
+    }
+
+    private String mask(String email) {
+        int at = email == null ? -1 : email.indexOf('@');
+        return at <= 1 ? String.valueOf(email) : email.charAt(0) + "***" + email.substring(at);
     }
 
     private User findAuthorizedUser(EntityManager em, String matricule, String password) {

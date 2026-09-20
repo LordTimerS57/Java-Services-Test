@@ -2,6 +2,7 @@ package com.exa.rest;
 
 import com.exa.model.User;
 import com.exa.rest.dto.LoginRequest;
+import com.exa.rest.dto.LogoutRequest;
 import com.exa.rest.dto.RegisterRequest;
 import com.exa.util.JPAUtil;
 import com.exa.util.PasswordUtil;
@@ -33,6 +34,7 @@ public class AuthResource {
             if (em.find(User.class, matricule) != null || emailExists(em, email)) return error(Response.Status.CONFLICT, "Matricule ou email déjà utilisé");
             User user = new User(matricule, request.nom.trim(), request.prenom.trim(), email,
                     PasswordUtil.hash(request.motDePasse), parseRole(request.role));
+            user.setConnecte(true);
             em.getTransaction().begin();
             em.persist(user);
             em.getTransaction().commit();
@@ -52,11 +54,27 @@ public class AuthResource {
             User user = em.createQuery("SELECT u FROM User u WHERE LOWER(u.email) = :email", User.class)
                     .setParameter("email", request.email.trim().toLowerCase()).setMaxResults(1).getResultStream().findFirst().orElse(null);
             if (user == null || !user.isStatus() || !PasswordUtil.matches(request.motDePasse, user.getMotDePasse())) return error(Response.Status.UNAUTHORIZED, "Email ou mot de passe incorrect");
-            if (!user.getMotDePasse().contains(":")) { em.getTransaction().begin(); user.setMotDePasse(PasswordUtil.hash(request.motDePasse)); em.getTransaction().commit(); }
+            em.getTransaction().begin(); if (!user.getMotDePasse().contains(":")) user.setMotDePasse(PasswordUtil.hash(request.motDePasse)); user.setConnecte(true); em.getTransaction().commit();
             return Response.ok(authResponse(user)).build();
         } catch (RuntimeException exception) {
+            rollback(em);
             exception.printStackTrace();
             return error(Response.Status.INTERNAL_SERVER_ERROR, "Connexion impossible");
+        } finally { em.close(); }
+    }
+
+    @POST @Path("/logout")
+    public Response logout(LogoutRequest request) {
+        if (request == null || blank(request.matricule)) return error(Response.Status.BAD_REQUEST, "Matricule requis");
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            User user = em.find(User.class, request.matricule.trim());
+            if (user != null && user.isConnecte()) { em.getTransaction().begin(); user.setConnecte(false); em.getTransaction().commit(); }
+            return Response.noContent().build();
+        } catch (RuntimeException exception) {
+            rollback(em);
+            exception.printStackTrace();
+            return error(Response.Status.INTERNAL_SERVER_ERROR, "Déconnexion impossible");
         } finally { em.close(); }
     }
 
