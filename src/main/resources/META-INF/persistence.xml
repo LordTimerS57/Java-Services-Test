@@ -7,10 +7,10 @@
 
     <persistence-unit name="monProjetPU" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-
         <class>com.exa.model.User</class>
         <class>com.exa.model.Message</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
+        
 
         <properties>
             <!-- Paramètres de connexion PostgreSQL -->

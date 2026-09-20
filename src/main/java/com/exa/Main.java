@@ -21,6 +21,26 @@ public class Main {
 
         try {
             em = JPAUtil.getEntityManager();
+         
+            
+         // DIAGNOSTIC TEMPORAIRE
+            try {
+                java.net.URL url = Thread.currentThread().getContextClassLoader().getResource("META-INF/persistence.xml");
+                System.out.println("=== CONTENU DE " + url + " ===");
+                try (java.io.InputStream in = url.openStream()) {
+                    System.out.println(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+                }
+                System.out.println("=== FIN ===");
+
+                Class<?> c = Class.forName("com.exa.model.User");
+                System.out.println("User chargé depuis : " + c.getProtectionDomain().getCodeSource().getLocation());
+                System.out.println("@Entity présent : " + c.isAnnotationPresent(jakarta.persistence.Entity.class));
+                System.out.println("Entity.class chargé depuis : " + jakarta.persistence.Entity.class.getProtectionDomain().getCodeSource().getLocation());
+                System.out.println("Hibernate : " + org.hibernate.Version.getVersionString());
+                System.out.println("Entités : " + em.getMetamodel().getEntities());
+            } catch (Exception e) { e.printStackTrace(); }
+            
+            
             em.getTransaction().begin();
 
             // ------------------------------------------------------------
