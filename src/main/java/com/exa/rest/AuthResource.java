@@ -39,6 +39,7 @@ public class AuthResource {
             em.getTransaction().begin();
             em.persist(user);
             em.getTransaction().commit();
+            MessageSocket.broadcastUser("USER_CREATED", user.getMatricule());
             return Response.status(Response.Status.CREATED).entity(authResponse(user)).build();
         } catch (RuntimeException exception) {
             rollback(em);
@@ -55,7 +56,9 @@ public class AuthResource {
             User user = em.createQuery("SELECT u FROM User u WHERE LOWER(u.email) = :email", User.class)
                     .setParameter("email", request.email.trim().toLowerCase()).setMaxResults(1).getResultStream().findFirst().orElse(null);
             if (user == null || !user.isStatus() || !PasswordUtil.matches(request.motDePasse, user.getMotDePasse())) return error(Response.Status.UNAUTHORIZED, "Email ou mot de passe incorrect");
-            em.getTransaction().begin(); if (!user.getMotDePasse().contains(":")) user.setMotDePasse(PasswordUtil.hash(request.motDePasse)); user.setConnecte(true); em.getTransaction().commit();
+            if (user.isConnecte() && MessageSocket.isUserConnected(user.getMatricule())) return error(Response.Status.CONFLICT, "Vous êtes déjà connecté sur un autre navigateur ou appareil.");
+            em.getTransaction().begin(); if (!user.getMotDePasse().contains(":")) user.setMotDePasse(PasswordUtil.hash(request.motDePasse)); user.setConnecte(true); em.getTransaction().commit(); 
+            	MessageSocket.broadcastUser("USER_ONLINE", user.getMatricule());
             return Response.ok(authResponse(user)).build();
         } catch (RuntimeException exception) {
             rollback(em);
@@ -72,6 +75,7 @@ public class AuthResource {
             User user = em.find(User.class, request.matricule.trim());
             if (user != null && user.isConnecte()) { em.getTransaction().begin(); user.setConnecte(false); em.getTransaction().commit(); }
             MessageSocket.disconnectUser(request.matricule.trim());
+            MessageSocket.broadcastUser("USER_OFFLINE", request.matricule.trim());
             return Response.noContent().build();
         } catch (RuntimeException exception) {
             rollback(em);

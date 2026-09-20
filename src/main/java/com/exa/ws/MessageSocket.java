@@ -63,7 +63,16 @@ public class MessageSocket {
 
     /** type : CREATED, UPDATED, DELETED, REPORTED, HIDDEN. */
     public static void broadcast(String type, int id) {
-        String json = "{\"type\":\"" + type + "\",\"id\":" + id + "}";
+        send("{\"type\":\"" + type + "\",\"id\":" + id + "}");
+    }
+
+    /** type : USER_CREATED, USER_ONLINE, USER_OFFLINE. */
+    public static void broadcastUser(String type, String matricule) {
+        String safe = matricule == null ? "" : matricule.replace("\\", "\\\\").replace("\"", "\\\"");
+        send("{\"type\":\"" + type + "\",\"matricule\":\"" + safe + "\"}");
+    }
+
+    private static void send(String json) {
         for (Session session : SESSIONS) {
             synchronized (session) {
                 try {
@@ -75,6 +84,15 @@ public class MessageSocket {
         }
     }
 
+    /** Vrai si l'utilisateur a au moins une session WebSocket réellement ouverte. */
+    public static boolean isUserConnected(String matricule) {
+        if (matricule == null) return false;
+        Set<Session> sessions = SESSIONS_BY_USER.get(matricule);
+        if (sessions == null) return false;
+        sessions.removeIf(session -> !session.isOpen());
+        return !sessions.isEmpty();
+    }
+    
     /** Ferme immédiatement toutes les sessions WS ouvertes par cet utilisateur (appelé au logout). */
     public static void disconnectUser(String matricule) {
         if (matricule == null) return;
