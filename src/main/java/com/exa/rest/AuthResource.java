@@ -6,6 +6,7 @@ import com.exa.rest.dto.LogoutRequest;
 import com.exa.rest.dto.RegisterRequest;
 import com.exa.util.JPAUtil;
 import com.exa.util.PasswordUtil;
+import com.exa.ws.MessageSocket;
 
 import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.Consumes;
@@ -70,6 +71,7 @@ public class AuthResource {
         try {
             User user = em.find(User.class, request.matricule.trim());
             if (user != null && user.isConnecte()) { em.getTransaction().begin(); user.setConnecte(false); em.getTransaction().commit(); }
+            MessageSocket.disconnectUser(request.matricule.trim());
             return Response.noContent().build();
         } catch (RuntimeException exception) {
             rollback(em);
