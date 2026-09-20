@@ -169,9 +169,7 @@ public class MessageResource {
             if (!isAuthor(message, matricule)) return forbidden("Vous ne pouvez supprimer que vos propres messages");
             em.getTransaction().begin();
             if (message.getMessagesReponses().isEmpty()) {
-                Message parent = message.getMessageParent();
-                if (parent != null) parent.getMessagesReponses().remove(message);
-                em.remove(message);
+                removeAndPrune(em, message);
             } else {
                 message.setStatut(Message.Statut.SUPPRIME);
                 message.setContenu("Message supprimé");
@@ -209,6 +207,14 @@ public class MessageResource {
         String q = query == null ? "" : query.trim().toLowerCase(); String s = subject == null ? "" : subject.trim().toLowerCase();
         String objet = m.getObjet() == null ? "" : m.getObjet().toLowerCase(); String contenu = m.getContenu() == null ? "" : m.getContenu().toLowerCase();
         LocalDateTime date = m.getDateDePublication(); return (q.isBlank() || objet.contains(q) || contenu.contains(q)) && (s.isBlank() || objet.contains(s)) && (start == null || !date.isBefore(start)) && (end == null || !date.isAfter(end));
+    }
+    private void removeAndPrune(EntityManager em, Message message) {
+        Message parent = message.getMessageParent();
+        if (parent != null) parent.getMessagesReponses().remove(message);
+        em.remove(message);
+        if (parent != null && parent.getStatut() == Message.Statut.SUPPRIME && parent.getMessagesReponses().isEmpty()) {
+            removeAndPrune(em, parent);
+        }
     }
     private LocalDateTime parseDate(String value, boolean end) { if (value == null || value.isBlank()) return null; return end ? LocalDate.parse(value).atTime(LocalTime.MAX) : LocalDate.parse(value).atStartOfDay(); }
     private User findUser(EntityManager em, User user) { return user == null || user.getMatricule() == null ? null : em.find(User.class, user.getMatricule()); }
